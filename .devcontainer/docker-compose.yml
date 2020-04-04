@@ -1,0 +1,9 @@
+version: '3'
+services:
+  dev:
+    build: .
+    volumes:
+      - ..:/app
+      - ~/.ssh:/.ssh:ro
+    working_dir: /app
+    command: /bin/bash -c "while sleep 1000; do :; done"
