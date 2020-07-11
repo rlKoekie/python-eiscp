@@ -82,6 +82,14 @@ class Connection:
 
         return conn
 
+    def update_property(self, zone, propname, value):
+        """Format an update message and send to the receiver."""
+        self.send(f"{zone}.{propname}={value}")
+
+    def query_property(self, zone, propname):
+        """Format a query message and send to the receiver."""
+        self.send(f"{zone}.{propname}=query")
+
     def send(self, msg):
         """Fire and forget data to the reciever."""
         self.protocol.command(msg)
