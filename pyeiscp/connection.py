@@ -27,6 +27,7 @@ class Connection:
         loop=None,
         protocol_class=AVR,
         update_callback=None,
+        connect_callback=None
     ):
         """Initiate a connection to a specific device.
 
@@ -76,19 +77,12 @@ class Connection:
             connection_lost_callback=connection_lost,
             loop=conn._loop,
             update_callback=update_callback,
+            connect_callback=connect_callback,
         )
 
         await conn._reconnect()
 
         return conn
-
-    def update_property(self, zone, propname, value):
-        """Format an update message and send to the receiver."""
-        self.send(f"{zone}.{propname}={value}")
-
-    def query_property(self, zone, propname):
-        """Format a query message and send to the receiver."""
-        self.send(f"{zone}.{propname}=query")
 
     def send(self, msg):
         """Fire and forget data to the reciever."""

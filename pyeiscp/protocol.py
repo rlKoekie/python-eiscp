@@ -251,7 +251,12 @@ def iscp_to_command(iscp_message):
 class AVR(asyncio.Protocol):
     """The Anthem AVR IP control protocol handler."""
 
-    def __init__(self, update_callback=None, loop=None, connection_lost_callback=None):
+    def __init__(self,
+        update_callback=None,
+        connect_callback=None,
+        loop=None,
+        connection_lost_callback=None,
+    ):
         """Protocol handler that handles all status and changes on AVR.
 
         This class is expected to be wrapped inside a Connection class object
@@ -275,6 +280,7 @@ class AVR(asyncio.Protocol):
         self.log = logging.getLogger(__name__)
         self._connection_lost_callback = connection_lost_callback
         self._update_callback = update_callback
+        self._connect_callback = connect_callback
         self.buffer = b""
         self._input_names = {}
         self._input_numbers = {}
@@ -318,6 +324,9 @@ class AVR(asyncio.Protocol):
         """Called when asyncio.Protocol establishes the network connection."""
         self.log.info("Connection established to AVR")
         self.transport = transport
+
+        if self._connect_callback:
+            self._loop.call_soon(self._connect_callback)
 
         # self.transport.set_write_buffer_limits(0)
         limit_low, limit_high = self.transport.get_write_buffer_limits()
