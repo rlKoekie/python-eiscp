@@ -41,12 +41,14 @@ async def console(loop, log):
         """Receives event callback from eISCP Protocol class."""
         zone, command, value = message
         log.info("Zone: %s | %s: %s" % (zone, command, value))
+    def connect_callback():
+        log.info("Successfully (re)connected to AVR")
 
     host = args.host
     port = int(args.port)
 
     conn = await pyeiscp.Connection.create(
-        host=host, port=port, loop=loop, update_callback=log_callback
+        host=host, port=port, loop=loop, update_callback=log_callback, connect_callback=connect_callback
     )
 
     for message in args.messages:
