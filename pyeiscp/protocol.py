@@ -229,17 +229,27 @@ def iscp_to_command(iscp_message):
         command, args = iscp_message[:3], iscp_message[3:]
         if command in zone_cmds:
             if args in zone_cmds[command]["values"]:
+                if "," in zone_cmds[command]["values"][args]["name"]:
+                    value = tuple(zone_cmds[command]["values"][args]["name"].split(","))
+                else:
+                    value = zone_cmds[command]["values"][args]["name"]
+
                 return (
                     zone,
                     zone_cmds[command]["name"],
-                    zone_cmds[command]["values"][args]["name"],
+                    value
                 )
             else:
                 match = re.match("[+-]?[0-9a-f]+$", args, re.IGNORECASE)
                 if match:
                     return zone, zone_cmds[command]["name"], int(args, 16)
                 else:
-                    return zone, zone_cmds[command]["name"], args
+                    if "," in args:
+                        value = tuple(args.split(","))
+                    else:
+                        value = args
+
+                    return zone, zone_cmds[command]["name"], value
 
     else:
         raise ValueError(
@@ -366,7 +376,7 @@ class AVR(asyncio.Protocol):
                     if self._update_callback:
                         self._loop.call_soon(self._update_callback, message)
                 except:
-                    self.log.warning("Unable to parse recieved message")
+                    self.log.warning("Unable to parse recieved message: %s", data.decode().rstrip())
 
                 self.buffer = self.buffer[16 + size :]  # shift data to start
                 # If there is still data in the buffer,
