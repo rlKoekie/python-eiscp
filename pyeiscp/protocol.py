@@ -350,9 +350,7 @@ class AVR(asyncio.Protocol):
 
     def connection_lost(self, exc):
         """Called when asyncio.Protocol loses the network connection."""
-        if exc is None:
-            self.log.warning("eof from receiver?")
-        else:
+        if exc is not None:
             self.log.warning("Lost connection to receiver: %s", exc)
 
         self.transport = None
