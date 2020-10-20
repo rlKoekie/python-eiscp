@@ -128,21 +128,21 @@ class Connection:
 
     def close(self):
         """Close the AVR device connection and don't try to reconnect."""
-        self.log.warning("Closing connection to AVR")
+        self.log.info("Closing connection to AVR")
         self._closing = True
         if self.protocol.transport:
             self.protocol.transport.close()
 
     def halt(self):
         """Close the AVR device connection and wait for a resume() request."""
-        self.log.warning("Halting connection to AVR")
+        self.log.info("Halting connection to AVR")
         self._halted = True
         if self.protocol.transport:
             self.protocol.transport.close()
 
     def resume(self):
         """Resume the AVR device connection if we have been halted."""
-        self.log.warning("Resuming connection to AVR")
+        self.log.info("Resuming connection to AVR")
         self._halted = False
 
     @property
