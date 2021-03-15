@@ -113,6 +113,24 @@ class eISCPPacket(object):
 
         return eISCPPacket.header(magic, header_size, data_size, version, reserved)
 
+    @classmethod
+    def parse_info(cls, bytes):
+        response = cls.parse(bytes)
+        # Return string looks something like this:
+        # !1ECNTX-NR609/60128/DX
+        info = re.match(r'''
+            !
+            (?P<device_category>\d)
+            ECN
+            (?P<model_name>[^/]*)/
+            (?P<iscp_port>\d{5})/
+            (?P<area_code>\w{2})/
+            (?P<identifier>.{0,12})
+        ''', response.strip(), re.VERBOSE)
+
+        if info:
+            return info.groupdict()
+
 
 def command_to_packet(command):
     """Convert an ascii command like (PVR00) to the binary data we
