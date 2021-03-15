@@ -56,7 +56,7 @@ class DiscoveryProtocol(asyncio.DatagramProtocol):
             self.log.info(f"{info['model_name']} discovered at {addr}")
             self.discovered.append(info['identifier'])
             if self._discovered_callback:
-                ensure_future(self._discovered_callback(addr[0], int(info['iscp_port']), info['model_name']))
+                ensure_future(self._discovered_callback(addr[0], int(info['iscp_port']), info['model_name'], info['identifier']))
 
     def broadcast_discovery_packet(self):
         """Broadcast discovery packets over the target."""
@@ -212,7 +212,7 @@ class Connection:
 
         _loop = loop or asyncio.get_event_loop()
 
-        async def discovered_callback(host, port, name):
+        async def discovered_callback(host, port, name, identifier):
             """Async function callback for Discovery Protocol when an AVR is discovered"""
 
             def _update_callback(message):
@@ -234,6 +234,7 @@ class Connection:
 
             # Pass the created Connection to the discovery callback
             conn.name = name
+            conn.identifier = identifier
             if discovery_callback:
                 ensure_future(discovery_callback(conn))
 
