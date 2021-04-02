@@ -113,6 +113,24 @@ class eISCPPacket(object):
 
         return eISCPPacket.header(magic, header_size, data_size, version, reserved)
 
+    @classmethod
+    def parse_info(cls, bytes):
+        response = cls.parse(bytes)
+        # Return string looks something like this:
+        # !1ECNTX-NR609/60128/DX
+        info = re.match(r'''
+            !
+            (?P<device_category>\d)
+            ECN
+            (?P<model_name>[^/]*)/
+            (?P<iscp_port>\d{5})/
+            (?P<area_code>\w{2})/
+            (?P<identifier>.{0,12})
+        ''', response.strip(), re.VERBOSE)
+
+        if info:
+            return info.groupdict()
+
 
 def command_to_packet(command):
     """Convert an ascii command like (PVR00) to the binary data we
@@ -350,9 +368,7 @@ class AVR(asyncio.Protocol):
 
     def connection_lost(self, exc):
         """Called when asyncio.Protocol loses the network connection."""
-        if exc is None:
-            self.log.warning("eof from receiver?")
-        else:
+        if exc is not None:
             self.log.warning("Lost connection to receiver: %s", exc)
 
         self.transport = None
@@ -376,7 +392,7 @@ class AVR(asyncio.Protocol):
                     if self._update_callback:
                         self._loop.call_soon(self._update_callback, message)
                 except:
-                    self.log.warning("Unable to parse recieved message: %s", data.decode().rstrip())
+                    self.log.warning("Unable to parse recieved message: %s", data.decode('utf-8', 'backslashreplace').rstrip())
 
                 self.buffer = self.buffer[16 + size :]  # shift data to start
                 # If there is still data in the buffer,
