@@ -11,7 +11,7 @@ def readme():
 
 setup(
     name="pyeiscp",
-    version="0.0.4",
+    version="0.0.5",
     author="Mathieu Pasquet",
     author_email="mat@pyeiscp.pasquet.co",
     url="https://github.com/winterscar/python-eiscp",
@@ -29,6 +29,9 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     include_package_data=True,
+    install_requires=[
+        "netifaces",
+    ],
     zip_safe=True,
     entry_points={"console_scripts": ["eiscp_monitor = pyeiscp.tools:monitor",]},
 )
