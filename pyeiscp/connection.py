@@ -147,11 +147,21 @@ class Connection:
             if conn._auto_reconnect and not conn._closing:
                 ensure_future(conn._reconnect(), loop=conn._loop)
 
+        def _update_callback(message):
+            """Function callback for Protocol class when the AVR sends updates."""
+            if update_callback:
+                conn._loop.call_soon(update_callback, message, conn.host)
+
+        def _connect_callback():
+            """Function callback for Protocoal class when connection is established."""
+            if connect_callback:
+                conn._loop.call_soon(connect_callback, conn.host)
+
         conn.protocol = protocol_class(
             connection_lost_callback=connection_lost,
             loop=conn._loop,
-            update_callback=update_callback,
-            connect_callback=connect_callback,
+            update_callback=_update_callback,
+            connect_callback=_connect_callback,
         )
 
         if auto_connect:
@@ -215,11 +225,6 @@ class Connection:
         async def discovered_callback(host, port, name, identifier):
             """Async function callback for Discovery Protocol when an AVR is discovered"""
 
-            def _update_callback(message):
-                """Function callback for Protocol class when the AVR sends updates."""
-                if update_callback:
-                    _loop.call_soon(update_callback, message, host)
-
             # Create a Connection, but do not auto connect
             conn = await cls.create(
                 host=host,
@@ -227,7 +232,7 @@ class Connection:
                 auto_reconnect=auto_reconnect,
                 loop=_loop,
                 protocol_class=protocol_class,
-                update_callback=_update_callback,
+                update_callback=update_callback,
                 connect_callback=connect_callback,
                 auto_connect=False
             )
