@@ -11,7 +11,7 @@ def readme():
 
 setup(
     name="pyeiscp",
-    version="0.0.5",
+    version="0.0.6",
     author="Mathieu Pasquet",
     author_email="mat@pyeiscp.pasquet.co",
     url="https://github.com/winterscar/python-eiscp",
