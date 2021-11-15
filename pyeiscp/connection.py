@@ -89,10 +89,12 @@ class Connection:
         host="localhost",
         port=60128,
         auto_reconnect=True,
+        max_retry_interval=300,
         loop=None,
         protocol_class=AVR,
         update_callback=None,
         connect_callback=None,
+        disconnect_callback=None,
         auto_connect=True
     ):
         """Initiate a connection to a specific device.
@@ -106,12 +108,16 @@ class Connection:
             TCP port number of the device
         :param auto_reconnect:
             Should the Connection try to automatically reconnect if needed?
+        :param max_retry_interval:
+            Maximum time between reconnects when auto reconnect is enabled
         :param loop:
             asyncio.loop for async operation
         :param update_callback
             This function is called whenever AVR state data changes
         :param connect_callback
             This function is called when the connection with the AVR is established
+        :param disconnect_callback
+            This function is called when the connection with the AVR is lost
         :param auto_connect
             Should the Connection try to automatically connect?
 
@@ -121,11 +127,15 @@ class Connection:
             int
         :type auto_reconnect:
             boolean
+        :param max_retry_interval:
+            int
         :type loop:
             asyncio.loop
         :type update_callback:
             callable
         :type connect_callback:
+            callable
+        :param disconnect_callback
             callable
         :type auto_connect:
             boolean
@@ -141,11 +151,15 @@ class Connection:
         conn._closing = False
         conn._halted = False
         conn._auto_reconnect = auto_reconnect
+        conn.max_retry_interval = max_retry_interval
 
-        def connection_lost():
-            """Function callback for Protocoal class when connection is lost."""
+        def _disconnect_callback():
+            """Function callback for Protocol class when connection is lost."""
             if conn._auto_reconnect and not conn._closing:
                 ensure_future(conn._reconnect(), loop=conn._loop)
+
+            if disconnect_callback:
+                conn._loop.call_soon(disconnect_callback, conn.host)
 
         def _update_callback(message):
             """Function callback for Protocol class when the AVR sends updates."""
@@ -158,10 +172,10 @@ class Connection:
                 conn._loop.call_soon(connect_callback, conn.host)
 
         conn.protocol = protocol_class(
-            connection_lost_callback=connection_lost,
             loop=conn._loop,
             update_callback=_update_callback,
             connect_callback=_connect_callback,
+            connection_lost_callback=_disconnect_callback,
         )
 
         if auto_connect:
@@ -172,26 +186,34 @@ class Connection:
     @classmethod
     async def discover(
         cls,
+        host=None,
         port=60128,
         auto_reconnect=True,
+        max_retry_interval=300,
         loop=None,
         protocol_class=AVR,
         update_callback=None,
         connect_callback=None,
         discovery_callback=None,
+        disconnect_callback=None,
         timeout = 5
     ):
-        """Discover Onkyo or Pioneer AVRs on the network.
+        """Discover Onkyo or Pioneer Network Receivers on the network.
 
         Here we discover devices on the available networks and for every
         discovered device, a Connection object is returned through the
         discovery callback coroutine. The connection is not yet established,
         this should be done manually by calling connect on the Connection
 
+        :param host:
+            If specified, a direct connection is made to discover the AVR.
+            Else, the available broadcast addresses are used to disvoer AVRs.
         :param port:
             TCP port number of the device
         :param auto_reconnect:
             Should the Connection try to automatically reconnect if needed?
+        :param max_retry_interval:
+            Maximum time between reconnects when auto reconnect is enabled
         :param loop:
             asyncio.loop for async operation
         :param update_callback
@@ -200,13 +222,19 @@ class Connection:
             This function is called when the connection with discovered devices is established
         :param discovery_callback
             This function is called when a device has been discovered on the network
+        :param disconnect_callback
+            This function is called when the connection with the AVR is lost
         :param timeout
             Number of seconds to detect devices
 
+        :type host:
+            str
         :type port:
             int
         :type auto_reconnect:
             boolean
+        :type max_retry_interval:
+            int
         :type loop:
             asyncio.loop
         :type update_callback:
@@ -215,6 +243,8 @@ class Connection:
             callable
         :type discovery_callback:
             coroutine
+        :param disconnect_callback
+            coroutine
         :type timeout
             int
         """
@@ -222,18 +252,20 @@ class Connection:
 
         _loop = loop or asyncio.get_event_loop()
 
-        async def discovered_callback(host, port, name, identifier):
+        async def discovered_callback(discovered_host, port, name, identifier):
             """Async function callback for Discovery Protocol when an AVR is discovered"""
 
             # Create a Connection, but do not auto connect
             conn = await cls.create(
-                host=host,
+                host=discovered_host,
                 port=port,
                 auto_reconnect=auto_reconnect,
+                max_retry_interval=max_retry_interval,
                 loop=_loop,
                 protocol_class=protocol_class,
                 update_callback=update_callback,
                 connect_callback=connect_callback,
+                disconnect_callback=disconnect_callback,
                 auto_connect=False
             )
 
@@ -244,17 +276,36 @@ class Connection:
                 ensure_future(discovery_callback(conn))
 
         # Iterate over all network interfaces to find broadcast addresses
-        for interface in netifaces.interfaces():
-            ifaddrs=netifaces.ifaddresses(interface)
-            if not netifaces.AF_INET in ifaddrs:
-                continue
-            for ifaddr in ifaddrs[netifaces.AF_INET]:
-                if not "addr" in ifaddr or not "broadcast" in ifaddr:
+        ifaddrs = [
+            ifaddr
+            for interface in netifaces.interfaces()
+            for ifaddr in netifaces.ifaddresses(interface).get(netifaces.AF_INET, [])
+        ]
+
+        for ifaddr in ifaddrs:
+            if "addr" in ifaddr:
+                if host:
+                    # Set target to specified host
+                    target = (host, port)
+                elif "broadcast" in ifaddr:
+                    # Use the broadcast address to send the discovery packets
+                    target = (ifaddr["broadcast"], port)
+                else:
+                    # No host provided and no broadcast address available, so skip
                     continue
+
                 try:
-                    # Create a DiscoveryProtocol for each broadcast address to broadcast the discovery packets.
-                    protocol = DiscoveryProtocol(target=(ifaddr["broadcast"], port), discovered_callback=discovered_callback, loop=_loop)
-                    await _loop.create_datagram_endpoint( lambda: protocol, local_addr=(ifaddr["addr"], 0), allow_broadcast=True )
+                    protocol = DiscoveryProtocol(
+                        target=target,
+                        discovered_callback=discovered_callback,
+                        loop=_loop,
+                    )
+
+                    await _loop.create_datagram_endpoint(
+                        lambda: protocol,
+                        local_addr=(ifaddr["addr"], 0),
+                        allow_broadcast=True,
+                    )
                     # Close the DiscoveryProtocol connections after timeout seconds
                     ensure_future(protocol.async_close_delayed(timeout))
                 except PermissionError:
@@ -279,7 +330,7 @@ class Connection:
         self._retry_interval = 1
 
     def _increase_retry_interval(self):
-        self._retry_interval = min(300, 1.5 * self._retry_interval)
+        self._retry_interval = min(self._max_retry_interval, 1.5 * self._retry_interval)
 
     async def _reconnect(self):
         while True:
@@ -287,8 +338,8 @@ class Connection:
                 if self._halted:
                     await asyncio.sleep(2, loop=self._loop)
                 else:
-                    self.log.info(
-                        "Connecting to Onkyo AVR at %s:%d", self.host, self.port
+                    self.log.debug(
+                        "Connecting to Network Receiver at %s:%d", self.host, self.port
                     )
                     await self._loop.create_connection(
                         lambda: self.protocol, self.host, self.port
@@ -299,7 +350,7 @@ class Connection:
             except OSError:
                 self._increase_retry_interval()
                 interval = self._get_retry_interval()
-                self.log.warning("Connecting failed, retrying in %i seconds", interval)
+                self.log.debug("Connecting failed, retrying in %i seconds", interval)
                 await asyncio.sleep(interval, loop=self._loop)
 
     async def connect(self):
@@ -309,21 +360,21 @@ class Connection:
 
     def close(self):
         """Close the AVR device connection and don't try to reconnect."""
-        self.log.info("Closing connection to AVR")
+        self.log.info("Closing connection to Network Receiver")
         self._closing = True
         if self.protocol.transport:
             self.protocol.transport.close()
 
     def halt(self):
         """Close the AVR device connection and wait for a resume() request."""
-        self.log.info("Halting connection to AVR")
+        self.log.info("Halting connection to Network Receiver")
         self._halted = True
         if self.protocol.transport:
             self.protocol.transport.close()
 
     def resume(self):
         """Resume the AVR device connection if we have been halted."""
-        self.log.info("Resuming connection to AVR")
+        self.log.info("Resuming connection to Network Receiver")
         self._halted = False
 
     @property
