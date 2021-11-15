@@ -350,7 +350,6 @@ class AVR(asyncio.Protocol):
 
     def connection_made(self, transport):
         """Called when asyncio.Protocol establishes the network connection."""
-        self.log.info("Connection established to AVR")
         self.transport = transport
 
         if self._connect_callback:
@@ -392,7 +391,7 @@ class AVR(asyncio.Protocol):
                     if self._update_callback:
                         self._loop.call_soon(self._update_callback, message)
                 except:
-                    self.log.warning("Unable to parse recieved message: %s", data.decode('utf-8', 'backslashreplace').rstrip())
+                    self.log.debug("Unable to parse recieved message: %s", data.decode('utf-8', 'backslashreplace').rstrip())
 
                 self.buffer = self.buffer[16 + size :]  # shift data to start
                 # If there is still data in the buffer,
