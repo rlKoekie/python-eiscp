@@ -151,7 +151,7 @@ class Connection:
         conn._closing = False
         conn._halted = False
         conn._auto_reconnect = auto_reconnect
-        conn.max_retry_interval = max_retry_interval
+        conn._max_retry_interval = max_retry_interval
 
         def _disconnect_callback():
             """Function callback for Protocol class when connection is lost."""
