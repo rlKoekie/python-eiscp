@@ -152,13 +152,18 @@ class Connection:
         conn._halted = False
         conn._auto_reconnect = auto_reconnect
         conn._max_retry_interval = max_retry_interval
+        conn._disconnect_callback = disconnect_callback
+        conn._unexpected_disconnect = False
 
-        def _disconnect_callback():
+        def _disconnected_callback():
             """Function callback for Protocol class when connection is lost."""
             if conn._auto_reconnect and not conn._closing:
+                # Don't call the disconnect callback, but try to reconnect first.
+                conn._unexpected_disconnect = True
                 ensure_future(conn._reconnect(), loop=conn._loop)
 
-            if disconnect_callback:
+            elif disconnect_callback:
+                # No auto reconnect, so call the disconnect callback directly.
                 conn._loop.call_soon(disconnect_callback, conn.host)
 
         def _update_callback(message):
@@ -168,6 +173,7 @@ class Connection:
 
         def _connect_callback():
             """Function callback for Protocoal class when connection is established."""
+            conn._unexpected_disconnect = False
             if connect_callback:
                 conn._loop.call_soon(connect_callback, conn.host)
 
@@ -175,7 +181,7 @@ class Connection:
             loop=conn._loop,
             update_callback=_update_callback,
             connect_callback=_connect_callback,
-            connection_lost_callback=_disconnect_callback,
+            connection_lost_callback=_disconnected_callback,
         )
 
         if auto_connect:
@@ -348,6 +354,15 @@ class Connection:
                     return
 
             except OSError:
+                if self._unexpected_disconnect:
+                    # Reconnect started by a disconnect and connecting failed again,
+                    # so call the disconnect callback if there is one.
+                    # Also clear the unexpected disconnect flag to make sure we only
+                    # call the disconnect callback once for this disconnect.
+                    self._unexpected_disconnect = False
+                    if self._disconnect_callback:
+                        self._loop.call_soon(self._disconnect_callback, self.host)
+
                 self._increase_retry_interval()
                 interval = self._get_retry_interval()
                 self.log.debug("Connecting failed, retrying in %i seconds", interval)
