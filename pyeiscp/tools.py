@@ -37,11 +37,12 @@ async def console(loop, log):
 
     logging.basicConfig(level=level)
 
-    def log_callback(message):
+    def log_callback(message, host):
         """Receives event callback from eISCP Protocol class."""
         zone, command, value = message
         log.info("Zone: %s | %s: %s" % (zone, command, value))
-    def connect_callback():
+
+    def connect_callback(host):
         log.info("Successfully (re)connected to AVR")
 
     host = args.host
