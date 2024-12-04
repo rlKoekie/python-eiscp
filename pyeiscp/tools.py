@@ -2,13 +2,14 @@
 import argparse
 import asyncio
 import logging
+import time
 
 import pyeiscp
 
 __all__ = ("console", "monitor")
 
 
-async def console(loop, log):
+async def console(loop, log, timeout=False):
     """Connect to receiver and show events as they occur.
 
     Pulls the following arguments from the command line (not method arguments):
@@ -54,6 +55,9 @@ async def console(loop, log):
 
     for message in args.messages:
         conn.send(message)
+    if timeout:
+        await asyncio.sleep(timeout)
+        loop.stop()
 
 
 def monitor():
@@ -61,4 +65,11 @@ def monitor():
     log = logging.getLogger(__name__)
     loop = asyncio.get_event_loop()
     asyncio.ensure_future(console(loop, log))
+    loop.run_forever()
+
+def sender():
+    """Wrapper to call console with a loop that stops after 2 seconds"""
+    log = logging.getLogger(__name__)
+    loop = asyncio.get_event_loop()
+    asyncio.ensure_future(console(loop, log, timeout=1))
     loop.run_forever()
