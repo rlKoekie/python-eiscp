@@ -75,6 +75,13 @@ your receiver and its configured port:
 
    eiscp_monitor --host 10.0.0.100 --port 60128
 
+A secondary command line tool allows for easy sending of commands to
+the receiver. For example, to query the multiroom audio status ("groups")
+on an Onkyo receiver:
+
+::
+
+   eiscp_sender --host 10.0.0.100 'multiroom-status query'
 
 Credits
 -------
