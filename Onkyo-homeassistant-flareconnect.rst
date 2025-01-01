@@ -22,7 +22,7 @@ Installation
 
 First we will install the modified python-eiscp module and then try the commands in the terminal, that makes it easier to debug things. After this we will define aliasses for the commands in the configuration yaml file, and create two buttons on the dashboard. Try to copy-paste the commands, it is very easy to make a mistake in the order of single quotes, brackets, double quotes and slashes. Stuff will not work if you mistype them. 
 
-- Open up your HA terminal. This should show you a bash shell with a bunch of text and a $ sign. Welcome to Linux! If this is all new for you, you might want to read up a bit first about command lines, or you can just hope I included all needed steps in this writeup :-) Home Assistant is quite cleverly set up, with the actual homeassistant running in a virtual (docker) environment. So the shell we are in now, is not the same place as where things are executing when we use home assistant the normal way. So we first need to get into the docker environment. Run the following command to get in:
+Open up your HA terminal. This should show you a bash shell with a bunch of text and a $ sign. Welcome to Linux! If this is all new for you, you might want to read up a bit first about command lines, or you can just hope I included all needed steps in this writeup :-) Home Assistant is quite cleverly set up, with the actual homeassistant running in a virtual (docker) environment. So the shell we are in now, is not the same place as where things are executing when we use home assistant the normal way. So we first need to get into the docker environment. Run the following command to get in:
 
 ::
 
@@ -34,7 +34,9 @@ This will change your shell to something like: “homeassistant:/config#”, ind
 
   pip install -I git+https://github.com/rlKoekie/python-eiscp.git@onkyo-groups
 
-This should print some interesting text, and at the end there should be a line reading “Successfully installed netifaces-0.11.0 pyeiscp-0.0.7”. Feel free to ignore any warnings about running pip as ‘root’. This step will most likely have to be repeated when you update home assistant! I hope that the Onkyo plugin for home assistant itself will get the changes I made to python-eiscp integrated at some point, that will remove the need for these command line moves. 
+This should print some interesting text, and at the end there should be a line reading “Successfully installed netifaces-0.11.0 pyeiscp-0.0.7”. Feel free to ignore any warnings about running pip as ‘root’. 
+
+**This ``pip install`` step will most likely have to be repeated when you update home assistant! I hope that the Onkyo plugin for home assistant itself will get the changes I made to python-eiscp integrated at some point, that will remove the need for these command line moves.**
 
 Now we are ready to test! Let’s see if we can talk to our Onkyo devices. Run the following command, after changing the IP address (the 10.0.0.100 part) to the address of your own onkyo hardware (you wrote that down right?)
 
