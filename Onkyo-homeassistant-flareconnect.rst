@@ -51,9 +51,11 @@ Now we create the grouping command. It should look something like this:
   /usr/local/bin/eiscp_sender --host 10.0.0.100 'raw-message=<mgs zone="1"><groupid>1</groupid><maxdelay>500</maxdelay><devices><device id="012356AABBCC" zoneid="1"/><device id="0123456DDEEFF" zoneid="1"/></devices></mgs>'
 
 Make sure to:
+
 - Change the 10.0.0.100 IP address into the IP address of your main Onkyo device (the one sharing its audio to the secondary devices).
 - Change 0123456DDEEFF into the mac address of the main (sending) onkyo device
 - Change  012356AABBCC into the mac address of the secondary (receiving) onkyo device. (you can also setup multiroom audio with more than two devices, just repeat the <device id="012356AABBCC" zoneid="1"/> block with the mac address for another secondary onkyo device.
+
 If you run the moddified command on the homeassistant docker shell, it should change your onkyo devices to run in flareconnect mode. Congratulations!
 
 You can stop the audio grouping by telling the main device to switch to an empty audio group. The command should look something like this:
@@ -65,6 +67,7 @@ You can stop the audio grouping by telling the main device to switch to an empty
 Make sure to change the IP address to your own main (sending) device IP!
 
 If everything works: nice!
+
 - Copy the full commands you executed to start and stop the audio grouping to a text file.
 - Shut down the docker terminal by typing “exit” and hitting enter
 - Shut down the home assistant terminal by again typing “exit” and hitting enter
@@ -84,17 +87,21 @@ Of course make sure to change the start and stop commands to the ones you succes
 After these changes to configuration.yaml, restart homeassistant (settings > system > top right menu > reboot) and wait for HA to return.
 
 Now we are going to create the buttons on your home assistant dashboard:
+
 - Go to settings > devices and services > select the “helpers” tab at the top
 - Hit the “create helper” button on the bottom right, select “button”
 - Give the button a name (e.g. “start flareconnect button”, and find a nice icon (e.g. mdi:speaker-multiple )
 - Repeat to create a second button, now for “stop flareconnect button”
 - Go to your home assistant dashboard, hit the “edit” button on the top right
 - Select “by entities” at the top, and search for the name of your button (e.g. “flareconnect”). Select both, and proceed. Click on “add to dashboard”.
+
 Now edit each button with the following: 
+
 - Appearance> Give it a name, tick the “Name” box, disable the “status” box.
 - Interactions> behaviour: run action (my translation might be off, my instance is in Dutch).
 - Action: Shell command: start_flareconnect (or stop_flareconnect for the stop button).
 - Hit “Save”. 
+
 Select the “done editing” button on your dashboard (top right), and test your new buttons.
 
 Problems?
