@@ -36,7 +36,7 @@ This will change your shell to something like: “homeassistant:/config#”, ind
 
 This should print some interesting text, and at the end there should be a line reading “Successfully installed netifaces-0.11.0 pyeiscp-0.0.7”. Feel free to ignore any warnings about running pip as ‘root’. 
 
-**This ``pip install`` step will most likely have to be repeated when you update home assistant! I hope that the Onkyo plugin for home assistant itself will get the changes I made to python-eiscp integrated at some point, that will remove the need for these command line moves.**
+**This "pip install" step will most likely have to be repeated when you update home assistant! I hope that the Onkyo plugin for home assistant itself will get the changes I made to python-eiscp integrated at some point, that will remove the need for these command line moves.**
 
 Now we are ready to test! Let’s see if we can talk to our Onkyo devices. Run the following command, after changing the IP address (the 10.0.0.100 part) to the address of your own onkyo hardware (you wrote that down right?)
 
