@@ -59,17 +59,18 @@ async def console(loop, log, timeout=False):
         await asyncio.sleep(timeout)
         loop.stop()
 
-
 def monitor():
     """Wrapper to call console with a loop."""
     log = logging.getLogger(__name__)
-    loop = asyncio.get_event_loop()
-    asyncio.ensure_future(console(loop, log))
-    loop.run_forever()
+    async def main():
+        loop = asyncio.get_running_loop()
+        await console(loop, log)
+    asyncio.run(main())
 
 def sender():
     """Wrapper to call console with a loop that stops after 2 seconds"""
     log = logging.getLogger(__name__)
-    loop = asyncio.get_event_loop()
-    asyncio.ensure_future(console(loop, log, timeout=1))
-    loop.run_forever()
+    async def main():
+        loop = asyncio.get_running_loop()
+        await console(loop, log, timeout=1)
+    asyncio.run(main())`
