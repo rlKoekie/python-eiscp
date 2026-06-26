@@ -73,4 +73,4 @@ def sender():
     async def main():
         loop = asyncio.get_running_loop()
         await console(loop, log, timeout=1)
-    asyncio.run(main())`
+    asyncio.run(main())
